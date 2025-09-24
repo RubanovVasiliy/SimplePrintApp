@@ -3,3 +3,6 @@
 **/obj
 **/bin
 **/**.user
+simple-print-web/node_modules
+simple-print-web/.vscode
+simple-print-web/public
