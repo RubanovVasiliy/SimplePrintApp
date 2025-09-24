@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8">
+<title>Print Job</title>
+<style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:40px}
+    .row{display:flex;gap:12px;align-items:center}
+    button{padding:10px 16px;border:1px solid #ccc;border-radius:8px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #ddd;font-size:12px}
+    pre{font-family:ui-monospace,Consolas,monospace}
+</style>
+<h1>Печать даты</h1>
+<div class="row" style="margin:20px 0;">
+    <button id="primaryBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <span id="state" class="pill">state: —</span>
+    <span id="remain" class="pill">remain: —</span>
+</div>
+<pre id="log"></pre>
+<script>
+    const stateEl=document.getElementById('state');
+    const remainEl=document.getElementById('remain');
+    const primaryBtn=document.getElementById('primaryBtn');
+    const stopBtn=document.getElementById('stopBtn');
+    const logEl=document.getElementById('log');
+
+    async function api(path, method='POST'){const r=await fetch(path,{method}); if(!r.ok) throw new Error(await r.text()); return r.json();}
+    function render(s){
+        stateEl.textContent='state: '+s.state;
+        remainEl.textContent='remain: '+s.remainingSeconds+'s';
+        if(s.state==='Idle'){primaryBtn.textContent='Start'; stopBtn.disabled=true;}
+        if(s.state==='Running'){primaryBtn.textContent='Pause'; stopBtn.disabled=false;}
+        if(s.state==='Paused'){primaryBtn.textContent='Resume'; stopBtn.disabled=false;}
+    }
+    async function refresh(){ const s=await fetch('/state').then(r=>r.json()); render(s); }
+    primaryBtn.addEventListener('click', async ()=>{
+        const s=await fetch('/state').then(r=>r.json());
+        if(s.state==='Idle'){ await api('/start'); logEl.textContent+='▶ start\n'; }
+        else if(s.state==='Running'){ await api('/pause'); logEl.textContent+='⏸ pause\n'; }
+        else if(s.state==='Paused'){ await api('/resume'); logEl.textContent+='▶ resume\n'; }
+        await refresh();
+    });
+    stopBtn.addEventListener('click', async ()=>{ await api('/stop'); logEl.textContent+='⏹ stop\n'; await refresh(); });
+    setInterval(refresh, 500); refresh();
+</script>
+</html>
